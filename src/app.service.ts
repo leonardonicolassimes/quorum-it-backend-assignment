@@ -1,8 +1,9 @@
 import { Injectable } from '@nestjs/common';
+import { CommonResponse } from './shared/interfaces/commonTypes';
 
 @Injectable()
 export class AppService {
-  getHello(): string {
-    return 'Hello World!';
+  getHealthStatus(): CommonResponse {
+    return { status: 'OK', message: 'Everything is fine!' };
   }
 }
