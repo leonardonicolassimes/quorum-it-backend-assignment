@@ -1,5 +1,3 @@
-/* eslint-disable @typescript-eslint/no-unsafe-member-access */
-/* eslint-disable @typescript-eslint/no-unsafe-call */
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { AppController } from './app.controller';
@@ -12,6 +10,8 @@ import { Permission } from './shared/entities/permission.entity';
 import { UserRole } from './shared/entities/user-role.entity';
 import { UserPermission } from './shared/entities/user-permission.entity';
 import { RolePermission } from './shared/entities/role-permission.entity';
+import { UsersModule } from './user/user.module';
+import { InitializationModule } from './initialization/initialization.module';
 
 const dbPort = parseInt(process.env.DB_PORT || '5432');
 
@@ -36,8 +36,11 @@ const dbPort = parseInt(process.env.DB_PORT || '5432');
         RolePermission,
       ],
       synchronize: false,
+      autoLoadEntities: true,
     }),
     AuthModule,
+    UsersModule,
+    InitializationModule,
   ],
   controllers: [AppController],
   providers: [AppService],
