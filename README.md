@@ -42,6 +42,10 @@ $ npm run start:prod
 - Email: admin@mail.com
 - Password: Admin-1234
 
+## Migrations
+
+- The migrations running automatically when app starts
+
 ## Run tests
 
 ```bash
