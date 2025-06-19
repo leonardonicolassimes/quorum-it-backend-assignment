@@ -1,15 +1,22 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { UserController } from './user.controller';
-
+import { UsersController } from './user.controller';
+import { UserService } from './user.service';
+import { SuperAdminInterceptor } from '../shared/interceptors/superadmin.interceptor';
 describe('UserController', () => {
-  let controller: UserController;
+  let controller: UsersController;
+
+  const mockUserService = {};
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
-      controllers: [UserController],
+      controllers: [UsersController],
+      providers: [
+        { provide: UserService, useValue: mockUserService },
+        SuperAdminInterceptor,
+      ],
     }).compile();
 
-    controller = module.get<UserController>(UserController);
+    controller = module.get<UsersController>(UsersController);
   });
 
   it('should be defined', () => {
