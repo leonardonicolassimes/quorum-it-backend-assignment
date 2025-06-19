@@ -5,4 +5,8 @@ export class AssignPermissionToUserDto {
   @IsInt({ message: 'Permission ID must be an integer number' })
   @Min(1, { message: 'Permision ID must be major than 0' })
   permissionId: number;
+
+  @IsInt({ message: 'User ID must be an integer number' })
+  @Min(1, { message: 'User ID must be major than 0' })
+  userId: number;
 }
