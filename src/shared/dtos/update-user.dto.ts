@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-unsafe-call */
-import { IsOptional, IsEmail, Length, Matches } from 'class-validator';
+import { IsOptional, Length, Matches } from 'class-validator';
 
 export class UpdateUserDto {
   @IsOptional()
@@ -9,13 +9,9 @@ export class UpdateUserDto {
   name?: string;
 
   @IsOptional()
-  @IsEmail({}, { message: 'Email is invalid' })
-  email?: string;
-
-  @IsOptional()
   @Length(8, 255, { message: 'Password must contain at least 8 characters' })
   @Matches(
-    /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/,
+    /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&-])[A-Za-z\d@$!%*?&-]{8,}$/,
     {
       message:
         'Password must contain at least one uppercase letter, one lowercase letter, one number, and one special character',

@@ -4,7 +4,6 @@ import { UserService } from '../user/user.service';
 import * as bcrypt from 'bcryptjs';
 import { LoginDto } from '../shared/dtos/login.dto';
 import { ResponseUserDto } from '../shared/dtos/response-user.dto';
-import { CreateUserDto } from '../shared/dtos/create-user.dto';
 
 @Injectable()
 export class AuthService {
@@ -17,10 +16,11 @@ export class AuthService {
     email: string,
     pass: string,
   ): Promise<ResponseUserDto | null> {
-    const user = await this.userService.findByEmail(email);
+    const user = await this.userService.findByEmail(email, false);
 
     if (user && (await bcrypt.compare(pass, user.password))) {
-      const { ...result } = user;
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      const { password, ...result } = user;
       return result;
     }
     return null;
@@ -29,25 +29,12 @@ export class AuthService {
   async login(loginDto: LoginDto) {
     const user = await this.validateUser(loginDto.email, loginDto.password);
     if (!user) {
-      throw new UnauthorizedException('Credenciales inválidas');
+      throw new UnauthorizedException('Invalid credentials');
     }
 
-    const payload = {
-      sub: user.id,
-      email: user.email,
-    };
-
     return {
-      access_token: this.jwtService.sign(payload),
+      access_token: this.jwtService.sign(user),
       user,
     };
-  }
-
-  async register(createUserDto: CreateUserDto) {
-    const user = await this.userService.create(createUserDto);
-    return this.login({
-      email: user.email,
-      password: createUserDto.password,
-    });
   }
 }

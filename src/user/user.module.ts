@@ -7,6 +7,7 @@ import { UserRole } from '../shared/entities/user-role.entity';
 import { UserPermission } from '../shared/entities/user-permission.entity';
 import { Role } from '../shared/entities/role.entity';
 import { Permission } from '../shared/entities/permission.entity';
+import { SuperAdminInterceptor } from '../shared/interceptors/superadmin.interceptor';
 
 @Module({
   imports: [
@@ -19,7 +20,7 @@ import { Permission } from '../shared/entities/permission.entity';
     ]),
   ],
   controllers: [UsersController],
-  providers: [UserService],
+  providers: [UserService, SuperAdminInterceptor],
   exports: [UserService],
 })
 export class UserModule {}

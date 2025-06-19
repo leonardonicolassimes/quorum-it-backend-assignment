@@ -16,21 +16,27 @@ import { CreateUserDto } from '../shared/dtos/create-user.dto';
 import { UpdateUserDto } from '../shared/dtos/update-user.dto';
 import { ResponseUserDto } from '../shared/dtos/response-user.dto';
 import { LegacySerialize } from '../shared/decorators/legacy-serialize.decorator';
-import { ApiTags, ApiResponse, ApiOperation, ApiParam } from '@nestjs/swagger';
-import { JwtAuthGuard } from 'src/shared/guards/jwt-auth.guard';
-import { User } from '../shared/entities/user.entity';
-import { CurrentUser } from '../shared/decorators/current-user.decorator';
+import {
+  ApiTags,
+  ApiResponse,
+  ApiOperation,
+  ApiParam,
+  ApiBody,
+} from '@nestjs/swagger';
+import { JwtAuthGuard } from '../shared/guards/jwt-auth.guard';
+import { SuperAdmin } from '../shared/decorators/super-admin.decorator';
 
 @ApiTags('Users')
 @Controller('users')
-// @UseGuards(JwtAuthGuard)
-@LegacySerialize(ResponseUserDto)
+@UseGuards(JwtAuthGuard)
+@SuperAdmin()
 export class UsersController {
   constructor(private readonly userService: UserService) {}
 
   @LegacySerialize(ResponseUserDto)
   @Post('create')
   @ApiOperation({ summary: 'Create a new user' })
+  @ApiBody({ type: CreateUserDto })
   @ApiResponse({
     status: 201,
     description: 'User created successfully',
@@ -65,6 +71,7 @@ export class UsersController {
     return await this.userService.findOne(id);
   }
 
+  @LegacySerialize(ResponseUserDto)
   @Patch(':id')
   @ApiOperation({ summary: 'Update a user' })
   @ApiParam({
@@ -123,13 +130,21 @@ export class UsersController {
     return await this.userService.restore(id);
   }
 
-  @Post('/addRole/:roleId')
+  @Post(':userId/addRole/:roleId')
   @ApiOperation({ summary: 'Add role to user' })
   addRole(
+    @Param('userId', ParseIntPipe) userId: number,
     @Param('roleId', ParseIntPipe) roleId: number,
-    // @CurrentUser() user: User,
   ) {
-    //return this.userService.addRole(user.id, roleId);
-    return this.userService.addRole(2, roleId);
+    return this.userService.addRole(userId, roleId);
+  }
+
+  @Post(':userId/addPermission/:permissionId')
+  @ApiOperation({ summary: 'Add permission to user' })
+  addPermission(
+    @Param('userId', ParseIntPipe) userId: number,
+    @Param('permissionId', ParseIntPipe) permissionId: number,
+  ) {
+    return this.userService.addPermission(userId, permissionId);
   }
 }

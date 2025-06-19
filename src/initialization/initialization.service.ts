@@ -1,10 +1,9 @@
 import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
-import * as bcrypt from 'bcryptjs';
 import { ConfigService } from '@nestjs/config';
 import { UserService } from '../user/user.service';
 import { CreateUserDto } from '../shared/dtos/create-user.dto';
-import { CreateRoleDto } from 'src/shared/dtos/create-role.dto';
-import { RoleService } from 'src/role/role.service';
+import { CreateRoleDto } from '../shared/dtos/create-role.dto';
+import { RoleService } from '../role/role.service';
 
 @Injectable()
 export class InitializationService implements OnModuleInit {
@@ -36,7 +35,6 @@ export class InitializationService implements OnModuleInit {
       const name = process.env.SUPERADMIN_NAME!;
       const email = process.env.SUPERADMIN_EMAIL!;
       const password = process.env.SUPERADMIN_PASSWORD!;
-      const hashedPassword = await bcrypt.hash(password, 10);
 
       const superAdmin = await this.userService.findByEmail(email);
 
@@ -48,7 +46,7 @@ export class InitializationService implements OnModuleInit {
       const newSuperadminDto: CreateUserDto = {
         name,
         email,
-        password: hashedPassword,
+        password,
       };
 
       const newSuperadminUser = await this.userService.create(newSuperadminDto);
