@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unsafe-assignment */
 import {
   Injectable,
   NotFoundException,
@@ -8,12 +9,18 @@ import { Repository, IsNull } from 'typeorm';
 import { Permission } from '../shared/entities/permission.entity';
 import { CreatePermissionDto } from '../shared/dtos/create-permission.dto';
 import { UpdatePermissionDto } from '../shared/dtos/update-permission.dto';
+import { UserPermission } from '../shared/entities/user-permission.entity';
+import { RolePermission } from '../shared/entities/role-permission.entity';
 
 @Injectable()
 export class PermissionService {
   constructor(
     @InjectRepository(Permission)
     private permissionRepository: Repository<Permission>,
+    @InjectRepository(UserPermission)
+    private userPermissionRepository: Repository<UserPermission>,
+    @InjectRepository(RolePermission)
+    private rolePermissionRepository: Repository<RolePermission>,
   ) {}
 
   async create(createPermissionDto: CreatePermissionDto): Promise<Permission> {
@@ -77,19 +84,62 @@ export class PermissionService {
   }
 
   async remove(id: number): Promise<void> {
-    const result = await this.permissionRepository.softDelete(id);
-    if (result.affected === 0) {
+    const permission = await this.permissionRepository.findOne({
+      where: { id },
+      withDeleted: true,
+    });
+
+    if (permission?.deletedAt) {
+      throw new ConflictException(
+        `Permission with ID ${id} aready was deleted`,
+      );
+    } else if (permission) {
+      const result = await this.permissionRepository.softDelete(id);
+      if (result.affected === 0) {
+        throw new NotFoundException(`Permission with ID ${id} not found`);
+      }
+
+      await this.userPermissionRepository.update(
+        { permission: { id } },
+        { deletedAt: new Date() },
+      );
+
+      await this.rolePermissionRepository.update(
+        { permission: { id } },
+        { deletedAt: new Date() },
+      );
+    } else {
       throw new NotFoundException(`Permission with ID ${id} not found`);
     }
   }
 
   async restore(id: number): Promise<Permission> {
-    const result = await this.permissionRepository.restore(id);
-    if (result.affected === 0) {
-      throw new NotFoundException(
-        `Permission with ID ${id} not found or not deleted`,
+    const permission = await this.permissionRepository.findOne({
+      where: { id },
+      withDeleted: true,
+    });
+
+    if (permission?.deletedAt) {
+      const result = await this.permissionRepository.restore(id);
+      if (result.affected === 0) {
+        throw new NotFoundException(`Permission with ID ${id} not found`);
+      }
+
+      await this.userPermissionRepository.update(
+        { permission: { id } },
+        { deletedAt: null as any },
       );
+
+      await this.rolePermissionRepository.update(
+        { permission: { id } },
+        { deletedAt: null as any },
+      );
+    } else if (permission) {
+      throw new ConflictException(`Permission with ID ${id} not was deleted`);
+    } else {
+      throw new NotFoundException(`Permission with ID ${id} not found`);
     }
+
     return this.findOne(id);
   }
 }

@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unsafe-assignment */
 import {
   Injectable,
   NotFoundException,
@@ -9,6 +10,8 @@ import { Role } from '../shared/entities/role.entity';
 import { CreateRoleDto } from '../shared/dtos/create-role.dto';
 import { UpdateRoleDto } from '../shared/dtos/update-role.dto';
 import { Permission } from '../shared/entities/permission.entity';
+import { RolePermission } from '../shared/entities/role-permission.entity';
+import { UserRole } from '../shared/entities/user-role.entity';
 
 @Injectable()
 export class RoleService {
@@ -17,6 +20,10 @@ export class RoleService {
     private roleRepository: Repository<Role>,
     @InjectRepository(Permission)
     private permissionRepository: Repository<Permission>,
+    @InjectRepository(RolePermission)
+    private rolePermissionRepository: Repository<RolePermission>,
+    @InjectRepository(UserRole)
+    private userRoleRepository: Repository<UserRole>,
   ) {}
 
   async create(createRoleDto: CreateRoleDto): Promise<Role> {
@@ -35,14 +42,22 @@ export class RoleService {
   async findAll(): Promise<Role[]> {
     return this.roleRepository.find({
       where: { deletedAt: IsNull() },
-      relations: ['rolePermissions', 'rolePermissions.permission'],
+      relations: {
+        rolePermissions: {
+          permission: true,
+        },
+      },
     });
   }
 
   async findOne(id: number): Promise<Role> {
     const role = await this.roleRepository.findOne({
       where: { id, deletedAt: IsNull() },
-      relations: ['rolePermissions', 'rolePermissions.permission'],
+      relations: {
+        rolePermissions: {
+          permission: true,
+        },
+      },
     });
 
     if (!role) {
@@ -78,24 +93,65 @@ export class RoleService {
   }
 
   async remove(id: number): Promise<void> {
-    const result = await this.roleRepository.softDelete(id);
-    if (result.affected === 0) {
+    const role = await this.roleRepository.findOne({
+      where: { id },
+      withDeleted: true,
+    });
+
+    if (role?.deletedAt) {
+      throw new ConflictException(`Role with ID ${id} aready was deleted`);
+    } else if (role) {
+      const result = await this.roleRepository.softDelete(id);
+      if (result.affected === 0) {
+        throw new NotFoundException(`Role with ID ${id} not found`);
+      }
+
+      await this.userRoleRepository.update(
+        { role: { id } },
+        { deletedAt: new Date() },
+      );
+    } else {
       throw new NotFoundException(`Role with ID ${id} not found`);
     }
   }
 
   async restore(id: number): Promise<Role> {
-    const result = await this.roleRepository.restore(id);
-    if (result.affected === 0) {
-      throw new NotFoundException(
-        `Role with ID ${id} not found or not deleted`,
+    const role = await this.roleRepository.findOne({
+      where: { id },
+      withDeleted: true,
+    });
+
+    if (role?.deletedAt) {
+      const result = await this.roleRepository.restore(id);
+      if (result.affected === 0) {
+        throw new NotFoundException(`Role with ID ${id} not found`);
+      }
+
+      await this.userRoleRepository.update(
+        { role: { id } },
+        { deletedAt: null as any },
       );
+    } else if (role) {
+      throw new ConflictException(`Role with ID ${id} not was deleted`);
+    } else {
+      throw new NotFoundException(`Role with ID ${id} not found`);
     }
+
     return this.findOne(id);
   }
 
-  async addPermission(roleId: number, permissionId: number): Promise<Role> {
-    const role = await this.findOne(roleId);
+  async addPermission(
+    roleId: number,
+    permissionId: number,
+  ): Promise<RolePermission> {
+    const role = await this.roleRepository.findOne({
+      where: { id: roleId, deletedAt: IsNull() },
+    });
+
+    if (!role) {
+      throw new ConflictException(`Role with ID ${roleId} not found`);
+    }
+
     const permission = await this.permissionRepository.findOne({
       where: { id: permissionId, deletedAt: IsNull() },
     });
@@ -106,6 +162,26 @@ export class RoleService {
       );
     }
 
-    return role;
+    const permissionToRole = await this.rolePermissionRepository.findOne({
+      where: {
+        role: { id: roleId },
+        permission: { id: permissionId },
+        deletedAt: IsNull(),
+      },
+    });
+
+    if (permissionToRole) {
+      throw new ConflictException('Permission already assigned to role');
+    }
+
+    const rolePermissionEntity = this.rolePermissionRepository.create({
+      role: { id: role.id },
+      permission: { id: permission.id },
+    });
+
+    const rolePermission =
+      await this.rolePermissionRepository.save(rolePermissionEntity);
+
+    return rolePermission;
   }
 }

@@ -9,6 +9,7 @@ import {
   ParseIntPipe,
   HttpCode,
   HttpStatus,
+  UseGuards,
 } from '@nestjs/common';
 import { PermissionService } from './permission.service';
 import { CreatePermissionDto } from '../shared/dtos/create-permission.dto';
@@ -16,15 +17,18 @@ import { UpdatePermissionDto } from '../shared/dtos/update-permission.dto';
 import { ResponsePermissionDto } from '../shared/dtos/response-permission.dto';
 import { LegacySerialize } from '../shared/decorators/legacy-serialize.decorator';
 import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
+import { JwtAuthGuard } from '../shared/guards/jwt-auth.guard';
+import { SuperAdmin } from '../shared/decorators/super-admin.decorator';
 
 @ApiTags('Permissions')
 @Controller('permissions')
-// @UseGuards(JwtAuthGuard)
+@UseGuards(JwtAuthGuard)
+@SuperAdmin()
 @LegacySerialize(ResponsePermissionDto)
 export class PermissionController {
   constructor(private readonly permissionService: PermissionService) {}
 
-  @Post()
+  @Post('create')
   @ApiOperation({ summary: 'Create a new permission' })
   @ApiResponse({ status: 201, description: 'Permission created successfully' })
   @ApiResponse({ status: 409, description: 'Permission name already exists' })
