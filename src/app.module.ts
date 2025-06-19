@@ -10,8 +10,10 @@ import { Permission } from './shared/entities/permission.entity';
 import { UserRole } from './shared/entities/user-role.entity';
 import { UserPermission } from './shared/entities/user-permission.entity';
 import { RolePermission } from './shared/entities/role-permission.entity';
-import { UsersModule } from './user/user.module';
+import { UserModule } from './user/user.module';
 import { InitializationModule } from './initialization/initialization.module';
+import { RoleModule } from './role/role.module';
+import { PermissionModule } from './permission/permission.module';
 
 const dbPort = parseInt(process.env.DB_PORT || '5432');
 
@@ -39,8 +41,10 @@ const dbPort = parseInt(process.env.DB_PORT || '5432');
       autoLoadEntities: true,
     }),
     AuthModule,
-    UsersModule,
+    UserModule,
     InitializationModule,
+    RoleModule,
+    PermissionModule,
   ],
   controllers: [AppController],
   providers: [AppService],

@@ -5,4 +5,8 @@ export class AssignPermissionToRoleDto {
   @IsInt({ message: 'Permission ID must be an integer number' })
   @Min(1, { message: 'Permision ID must be major than 0' })
   permissionId: number;
+
+  @IsInt({ message: 'Role ID must be an integer number' })
+  @Min(1, { message: 'Role ID must be major than 0' })
+  roleId: number;
 }

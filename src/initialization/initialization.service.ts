@@ -1,8 +1,10 @@
 import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
 import * as bcrypt from 'bcryptjs';
 import { ConfigService } from '@nestjs/config';
-import { UsersService } from '../user/user.service';
+import { UserService } from '../user/user.service';
 import { CreateUserDto } from '../shared/dtos/create-user.dto';
+import { CreateRoleDto } from 'src/shared/dtos/create-role.dto';
+import { RoleService } from 'src/role/role.service';
 
 @Injectable()
 export class InitializationService implements OnModuleInit {
@@ -10,7 +12,8 @@ export class InitializationService implements OnModuleInit {
 
   constructor(
     private readonly configService: ConfigService,
-    private readonly userService: UsersService,
+    private readonly userService: UserService,
+    private readonly roleService: RoleService,
   ) {}
 
   async onModuleInit() {
@@ -29,6 +32,7 @@ export class InitializationService implements OnModuleInit {
         return;
       }
 
+      const superadminRoleName = process.env.SUPERADMIN_ROLE_NAME!;
       const name = process.env.SUPERADMIN_NAME!;
       const email = process.env.SUPERADMIN_EMAIL!;
       const password = process.env.SUPERADMIN_PASSWORD!;
@@ -41,13 +45,31 @@ export class InitializationService implements OnModuleInit {
         return;
       }
 
-      const newSuperAdmin: CreateUserDto = {
+      const newSuperadminDto: CreateUserDto = {
         name,
         email,
         password: hashedPassword,
       };
 
-      await this.userService.create(newSuperAdmin);
+      const newSuperadminUser = await this.userService.create(newSuperadminDto);
+      const superadminRole =
+        await this.roleService.findByName(superadminRoleName);
+
+      if (!superadminRole) {
+        const superadminRoleDto: CreateRoleDto = {
+          name: superadminRoleName,
+        };
+
+        const newSuperAdminRole =
+          await this.roleService.create(superadminRoleDto);
+
+        if (newSuperAdminRole) {
+          await this.userService.addRole(
+            newSuperadminUser.id,
+            newSuperAdminRole.id,
+          );
+        }
+      }
 
       this.logger.log('Superadmin created successfully');
     } catch (error) {
